@@ -1076,6 +1076,71 @@ App.prototype.addMarker = function(markerOptions, callback) {
     }, self.errorHandler, PLUGIN_NAME, 'exec', ['Marker.createMarker', self.deleteFromObject(markerOptions,'function')]);
 };
 
+App.prototype.addMarkers = function(markers, callback) {
+    var self = this;
+
+    var markerOptions = [];
+
+    for (var i = 0; i < markers.length; ++i) {
+      var options = markers[i];
+
+      options.animation = options.animation || undefined;
+      options.position = options.position || {};
+      options.position.lat = options.position.lat || 0.0;
+      options.position.lng = options.position.lng || 0.0;
+      options.anchor = options.anchor || [0.5, 0.5];
+      options.draggable = options.draggable === true;
+      options.icon = options.icon || undefined;
+      options.snippet = options.snippet || undefined;
+      options.title = options.title !== undefined ? String(options.title) : undefined;
+      options.visible = options.visible === undefined ? true : options.visible;
+      options.flat = options.flat  === true;
+      options.rotation = options.rotation || 0;
+      options.opacity = parseFloat("" + options.opacity, 10) || 1;
+      options.disableAutoPan = options.disableAutoPan === undefined ? false : options.disableAutoPan;
+      options.params = options.params || {};
+      if ("styles" in options) {
+          options.styles = typeof options.styles === "object" ? options.styles : {};
+
+          if ("color" in options.styles) {
+              options.styles.color = HTMLColor2RGBA(options.styles.color || "#000000");
+          }
+      }
+      if (options.icon && isHTMLColorString(options.icon)) {
+          options.icon = HTMLColor2RGBA(options.icon);
+      }
+
+      markerOptions.push(options)
+    }
+
+    console.log('called addmarkers!!!!!!!!!!!!!!!!!!!');
+    cordova.exec(function(results) {
+      console.log('cordova exec testing!!!!!!!!!!!!!');
+      var outputMarkers = [];
+      for (var i = 0; i < results.length; ++i) {
+        var result = results[i];
+        var options = markerOptions[i];
+        options.hashCode = result.hashCode;
+        var marker = new Marker(self, result.id, options);
+
+        MARKERS[result.id] = marker;
+        OVERLAYS[result.id] = marker;
+        outputMarkers.push(marker);
+
+        if (typeof options.markerClick === "function") {
+            marker.on(plugin.google.maps.event.MARKER_CLICK, options.markerClick);
+        }
+        if (typeof options.infoClick === "function") {
+            marker.on(plugin.google.maps.event.INFO_CLICK, options.infoClick);
+        }
+      }
+
+      if (typeof callback === "function") {
+          callback.call(self, outputMarkers, self);
+      }
+    }, self.errorHandler, PLUGIN_NAME, 'exec', ['Marker.createMarkers', markerOptions]);
+};
+
 
 //-------------
 // Circle
